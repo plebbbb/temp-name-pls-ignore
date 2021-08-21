@@ -30,10 +30,12 @@ app.post('/encode', (req, res) => {
 app.post('/decode', (req, res) => {
     const {decodedata} = req.body;
     const buf = Buffer.from(decodedata, 'base64').toString('utf-8');
+   // console.log(buf)
     const {key} = req.body;
     const task = spawn('python', [path.join(__dirname, 'PYTHON', 'decode.py'), buf, key.toString()]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
+       // console.log(data.toString())
         outpututf8str += data.toString();
       });
     task.on('close', (code) => {

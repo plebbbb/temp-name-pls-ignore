@@ -1,14 +1,9 @@
 import sys
 import conversions
+import codon
 ##sys.argv[] is how you get your parameters
 ##just print stuff, do sys.stdout.flush() at end
 
-#check if substring in list prior to skipping
-#a value of 0 indicates no codon interval
-codonlist = {
-    "TGT" : 1,
-    "TGC" : 1
-}
 
 #returns a list with the current processeddata position, activated codon, and converted string(only one line of blk)
 def encode_genomeline(linestring, input_data, data_index, cur_CD):
@@ -17,11 +12,11 @@ def encode_genomeline(linestring, input_data, data_index, cur_CD):
     postcdsw_ctr = 0 #counter to prevent things like TGTGT from counting as two codons
     i = 0
     while(i <= len(linestring)-3) :
-        if linestring[i : i+3] in codonlist and postcdsw_ctr == 0:
+        if linestring[i : i+3] in codon.codonlist and postcdsw_ctr == 0:
             if (cur_CD == 0) :
-                cur_CD = codonlist[linestring[i : i+3]]
+                cur_CD = codon.codonlist[linestring[i : i+3]]
                 postcdsw_ctr = 2
-            elif (codonlist[linestring[i : i+3]] == cur_CD):
+            elif (codon.codonlist[linestring[i : i+3]] == cur_CD):
                 cur_CD = 0
                 output += linestring[i : i+3]
                 i+=3
@@ -78,7 +73,7 @@ def encode_genome(raw_genome_fasta, processeddata) :
         nameblockpair = blocklist[bv].split('\n', 1)
         statusarr = encode_genomeblock(nameblockpair[1], processeddata, data_index)
         data_index = statusarr[0]
-        output += '>' + nameblockpair[0] + '\r\n' + statusarr[2] + '\r\n'
+        output += '>' + nameblockpair[0] + "\n" + statusarr[2] + "\n"
         if(statusarr[1]):
             for cv in range(bv+1, len(blocklist)):
                 output += '>' + blocklist[cv]
@@ -89,10 +84,10 @@ def encode_genome(raw_genome_fasta, processeddata) :
 #"""
 #actual processing stuff
 processedsecretdata = conversions.bytestring_to_letterstring(conversions.mask_key(str(sys.argv[2]), str(sys.argv[3])))
-finalizeddata = encode_genome(str(sys.argv[1]), processedsecretdata)
+header = conversions.bytestring_to_letterstring(conversions.mask_key((len(processedsecretdata).to_bytes(4,'big')).decode(), str(sys.argv[3])))
+finalizeddata = encode_genome(str(sys.argv[1]), header + processedsecretdata)
 sys.stdout.write(finalizeddata)
 sys.stdout.flush()
-
 #""
 
 
