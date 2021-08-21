@@ -4,7 +4,7 @@ import conversions
 ##just print stuff, do sys.stdout.flush() at end
 
 
-#print("HI")
-#print(sys.argv[1])
-print(conversions.bytestring_to_letterstring(str(sys.argv[1])))
+processedsecretdata = conversions.bytestring_to_letterstring(conversions.mask_key(str(sys.argv[1]), str(sys.argv[2])))
+print(processedsecretdata)
+
 sys.stdout.flush()

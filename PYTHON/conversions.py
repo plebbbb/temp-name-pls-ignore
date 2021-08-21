@@ -79,10 +79,12 @@ print(f'Initial: {init}\nConverted: {convertedinit}')
 unconvertedval = letterstring_to_bytestring(convertedinit)
 print(f'Unconverted value: {unconvertedval}')
 """
-
-#xor masking test
+"""
+#xor masking test - passed
+#the first 4 characters should be all whatever utf-8's 0 is, as test would match with test
 base = "testing lorem ipsum"
-key = "a key"
+key = "test"
 masked = mask_key(base, key)
 unmasked = mask_key(masked,key)
 print(f'OG: {base}\nMASKED: {masked}\nUNMASKED: {unmasked}')
+"""
