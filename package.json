@@ -18,6 +18,8 @@
   "homepage": "https://github.com/plebbbb/temp-name-pls-ignore#readme",
   "description": "",
   "dependencies": {
-    "express": "^4.17.1"
+    "child_process": "^1.0.2",
+    "express": "^4.17.1",
+    "path": "^0.12.7"
   }
 }

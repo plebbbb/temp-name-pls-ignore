@@ -1,5 +1,6 @@
 const express = require('express');
 const {spawn} = require('child_process');
+const path = require('path');
 const app = express();
 
 app.use(express.json({limit: '500mb'}));
@@ -7,7 +8,7 @@ app.use(express.json({limit: '500mb'}));
 
 app.post('/encode', (req, res) => {
     const {encodedata} = req.body;
-    const task = spawn('python', ['./PYTHON/encode.py', encodedata.toString()]);
+    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), encodedata.toString()]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
         outpututf8str += data.toString();
@@ -23,7 +24,7 @@ app.post('/encode', (req, res) => {
 
 app.post('/decode', (req, res) => {
     const {decodedata} = req.body;
-    const task = spawn('python', ['./PYTHON/decode.py', decodedata.toString()]);
+    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'decode.py'), decodedata.toString()]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
         outpututf8str += data.toString();
