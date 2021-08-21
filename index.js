@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json({limit: '500mb'}));
 
 
-app.get('/encode', (req, res) => {
+app.post('/encode', (req, res) => {
     const {encodedata} = req.body;
     const task = spawn('python', ['./PYTHON/encode.py', encodedata.toString()]);
     var outpututf8str = "";
@@ -21,7 +21,7 @@ app.get('/encode', (req, res) => {
 }
 );
 
-app.get('/decode', (req, res) => {
+app.post('/decode', (req, res) => {
     const {decodedata} = req.body;
     const task = spawn('python', ['./PYTHON/decode.py', decodedata.toString()]);
     var outpututf8str = "";
