@@ -5,7 +5,8 @@ const app = express();
 
 app.use(express.json({limit: '500mb'}));
 
-
+//afaik the spec for GET says that the body of the sending side should be ignored, so we aren't using it
+//not like post is better though, as technically we shouldn't be dumping an entire file back at the client
 app.post('/encode', (req, res) => {
     const {encodedata} = req.body;
     const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), encodedata.toString()]);

@@ -21,7 +21,7 @@ def calc_byte(x) :
 #output is in little endian, will work with any group of bytes
 def bytestring_to_letterstring(dataset) : 
     output = ""
-    for byte in dataset.encode("utf8") :
+    for byte in dataset.encode() :
        # output_ints(byte)
         for i in range(0,4) : 
             twobits = (byte >> ((i*2))) & 3 #rightshift until selected bits are in the first two bits, then mask with 3 to remove other bits
@@ -50,6 +50,19 @@ def letterstring_to_bytestring(input_string) :
         output += chr(letter4char_to_byteint(input_string[index : index+4]))
     return output
 
+def mask_key(input_bytestring, Mkeystring) :
+    masksz = len(Mkeystring)
+    bytekey = Mkeystring.encode()
+    maskiter = 0
+    output = ""
+    for char in input_bytestring.encode() :
+        output += chr(char ^ bytekey[maskiter])
+        maskiter+=1
+        if(masksz == maskiter):
+            maskiter = 0
+    return output
+
+
 #TESTS
 """
 #one number test - passed
@@ -61,8 +74,15 @@ print(f'Initial: {27}\nConverted: {result}\nUnconverted: {letter4char_to_byteint
 """
 #string test - passed
 init = "test123what123"
-convertedinit = bytestring_to_letterstring(init.encode("utf8"))
+convertedinit = bytestring_to_letterstring(init.encode())
 print(f'Initial: {init}\nConverted: {convertedinit}')
 unconvertedval = letterstring_to_bytestring(convertedinit)
 print(f'Unconverted value: {unconvertedval}')
 """
+
+#xor masking test
+base = "testing lorem ipsum"
+key = "a key"
+masked = mask_key(base, key)
+unmasked = mask_key(masked,key)
+print(f'OG: {base}\nMASKED: {masked}\nUNMASKED: {unmasked}')
