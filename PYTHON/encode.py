@@ -3,76 +3,117 @@ import conversions
 ##sys.argv[] is how you get your parameters
 ##just print stuff, do sys.stdout.flush() at end
 
-
-
-
-"""
-processedsecretdata = conversions.bytestring_to_letterstring(conversions.mask_key(str(sys.argv[1]), str(sys.argv[2])))
-sys.stdout.write(processedsecretdata)
-sys.stdout.flush()
-
-"""
 #check if substring in list prior to skipping
+#a value of 0 indicates no codon interval
 codonlist = {
     "TGT" : 1,
     "TGC" : 1
 }
 
+#returns a list with the current processeddata position, activated codon, and converted string(only one line of blk)
+def encode_genomeline(linestring, input_data, data_index, cur_CD):
+    output = ""
+    compl = False
+    postcdsw_ctr = 0 #counter to prevent things like TGTGT from counting as two codons
+    i = 0
+    while(i <= len(linestring)-3) :
+        if linestring[i : i+3] in codonlist and postcdsw_ctr == 0:
+            if (cur_CD == 0) :
+                cur_CD = codonlist[linestring[i : i+3]]
+                postcdsw_ctr = 2
+            elif (codonlist[linestring[i : i+3]] == cur_CD):
+                cur_CD = 0
+                output += linestring[i : i+3]
+                i+=3
+                continue
+        elif(postcdsw_ctr > 0): postcdsw_ctr-=1
+        if cur_CD != 0 or compl:
+            output += linestring[i]
+        else:
+            output += input_data[data_index]
+            data_index +=1
+            if(data_index == len(input_data)):
+                compl = True
+        i+=1
+    if cur_CD == 0 and not compl:
+        while(i < len(linestring)):
+            output += input_data[data_index]
+            data_index +=1
+            if(data_index == len(input_data)):
+                compl = True
+                break
+            i+=1
+    else:
+        output += linestring[len(linestring)-2 : len(linestring)]
+
+    return [data_index, compl, cur_CD, output]
+
 #returns a list consisting of the current processeddata position, and the converted string
-def encode_genomeblock(substring, input_data, data_index):
-    skipV = 0
-    start_indexrange = 0
-    outputstr = ""
-    for i in range(3, len(substring)):
-        if substring[i] == "\r" or substring[i] == "\n": #encode_genome should prevent \r and \n from being the start of a block
-            if(skipV != 0) : 
-                outputstr += substring[start_indexrange, i-1]
-            else:
-                dataindlength = min(substring-i-1, len(input_data) - data_index)
-            start_indexrange = i
-            continue
-        if substring[i-3, i] in codonlist:
-            if skipV == 0: 
-                outputstr += substring[start_indexrange, i-1]
-                start_indexrange = i
-                skipV = codonlist[substring[i-3,i]]
-            elif skipV != 0 and codonlist[substring[i-3,i]] == skipV :
-                skipV = 0
-                continue #skip this character
-        if skipV != 0: continue #skip everything between pairs
-
-
-    outputlist = [data_index, outputstr]
-    
-    return outputlist
+def encode_genomeblock(blockstring, input_data, data_index):
+    output = ""
+    linelist = blockstring.split('\n')
+    curCD = 0
+    compl = False
+    for lv in range(0, len(linelist)):
+        processedline = encode_genomeline(linelist[lv].rstrip('\r'), input_data, data_index, curCD)
+        output += processedline[3] + '\r\n'
+        curCD = processedline[2]
+        data_index = processedline[0]
+        if(processedline[1]):
+            compl = True
+            for ev in range(lv + 1, len(linelist)):
+                output += linelist[ev] + '\r\n'
+            break
+    return [data_index, compl, output]
+##
+   ## return outputlist
 
 
 def encode_genome(raw_genome_fasta, processeddata) :
     output = ""
-    islabel = False
-    codonjumpam = 0
-    startind = 0
-    pdataiter = 0
-    for i in range(0, len(raw_genome_fasta)):
-        if (raw_genome_fasta[i] == ">"):
-            islabel = True
-            if startind != 0: 
-                outputarr =  encode_genomeblock(raw_genome_fasta[startind, i-1], processeddata, pdataiter)
-                output += outputarr[1]
-                pdataiter = outputarr[0]
-                startind = i
-            continue
-        if raw_genome_fasta[i] == "\n" or raw_genome_fasta[i] == "\r":
-            if islabel: 
-                islabel = False
-                output += raw_genome_fasta[startind, i]
-                startind = i+1 #this will always be safe as we assume each label has a sequence
-            continue
-
-    outputarr =  encode_genomeblock(raw_genome_fasta[startind, i-1], processeddata, pdataiter)
-    output += outputarr[1]
-    pdataiter = outputarr[0]  
+    data_index = 0
+    blocklist = raw_genome_fasta.split('>')
+    for bv in range(0,len(blocklist)):
+        if len(blocklist[bv]) <= 3: continue #skip empty
+        nameblockpair = blocklist[bv].split('\n', 1)
+        statusarr = encode_genomeblock(nameblockpair[1], processeddata, data_index)
+        data_index = statusarr[0]
+        output += '>' + nameblockpair[0] + '\r\n' + statusarr[2] + '\r\n'
+        if(statusarr[1]):
+            for cv in range(bv+1, len(blocklist)):
+                output += '>' + blocklist[cv]
+            break
     return output
 
 
-substring = "T\rGAACTGTGGGTGGGTGGCCGCGGGATCCCCAGGCGACCTTCCCCGTG"
+#"""
+#actual processing stuff
+processedsecretdata = conversions.bytestring_to_letterstring(conversions.mask_key(str(sys.argv[2]), str(sys.argv[3])))
+finalizeddata = encode_genome(str(sys.argv[1]), processedsecretdata)
+sys.stdout.write(finalizeddata)
+sys.stdout.flush()
+
+#""
+
+
+
+
+#TESTS
+'''
+#one line test - passed
+substring = "0000TGTTGTTGT0000"
+targetstr = "987654321" # process index should be 9
+outputlist = encode_genomeline(substring, targetstr, 0, 0)
+print(f'CUR_INDEX: {outputlist[0]}\nCOMPLETE?: {outputlist[1]}\nIN CODON PAIR?: {outputlist[2]}PROCESSED STRING: {outputlist[3]}')
+'''
+'''
+#multi-line test - passed
+block = "00TGT000\r\r\n000TGTTGT\r\r\n0000000"
+fillvals = "9876"
+print(encode_genomeblock(block, fillvals, 0))
+'''
+'''
+#full file test - passes? probably. if bugs check here
+fullfile = ">HSBGPG Human gene for bone gla protein (BGP)\r\r\nGGCAGATTCCCCCTAGACCCGCCCGCACCATGGTCAGGCATGCCCCTCCTCATCGCTGGGCACAGCCCAGAGGGT\r\r\nATAAACAGTGCTGGAGGCTGGCGGGGCAGGCCAGCTGAGTCCTGAGCAGCAGCCCAGCGCAGCCACCGAGACACC\r\r\nATGAGAGCCCTCACACTCCTCGCCCTATTGGCCCTGGCCGCACTTTGCATCGCTGGCCAGGCAGGTGAGTGCCCC\r\r\nCACCTCCCCTCAGGCCGCATTGCAGTGGGGGCTGAGAGGAGGAAGCACCATGGCCCACCTCTTCTCACCCCTTTG\r\r\nGCTGGCAGTCCCTTTGCAGTCTAACCACCTTGTTGCAGGCTCAATCCATTTGCCCCAGCTCTGCCCTTGCAGAGG\r\r\nGAGAGGAGGGAAGAGCAAGCTGCCCGAGACGCAGGGGAAGGAGGATGAGGGCCCTGGGGATGAGCTGGGGTGAAC\r\r\nCAGGCTCCCTTTCCTTTGCAGGTGCGAAGCCCAGCGGTGCAGAGTCCAGCAAAGGTGCAGGTATGAGGATGGACC\r\r\nTGATGGGTTCCTGGACCCTCCCCTCTCACCCTGGTCCCTCAGTCTCATTCCCCCACTCCTGCCACCTCCTGTCTG\r\r\nGCCATCAGGAAGGCCAGCCTGCTCCCCACCTGATCCTCCCAAACCCAGAGCCACCTGATGCCTGCCCCTCTGCTC\r\r\nCACAGCCTTTGTGTCCAAGCAGGAGGGCAGCGAGGTAGTGAAGAGACCCAGGCGCTACCTGTATCAATGGCTGGG\r\r\nGTGAGAGAAAAGGCAGAGCTGGGCCAAGGCCCTGCCTCTCCGGGATGGTCTGTGGGGGAGCTGCAGCAGGGAGTG\r\r\nGCCTCTCTGGGTTGTGGTGGGGGTACAGGCAGCCTGCCCTGGTGGGCACCCTGGAGCCCCATGTGTAGGGAGAGG\r\r\nAGGGATGGGCATTTTGCACGGGGGCTGATGCCACCACGTCGGGTGTCTCAGAGCCCCAGTCCCCTACCCGGATCC\r\r\nCCTGGAGCCCAGGAGGGAGGTGTGTGAGCTCAATCCGGACTGTGACGAGTTGGCTGACCACATCGGCTTTCAGGA\r\r\nGGCCTATCGGCGCTTCTACGGCCCGGTCTAGGGTGTCGCTCTGCTGGCCTGGCCGGCAACCCCAGTTCTGCTCCT\r\r\nCTCCAGGCACCCTTCTTTCCTCTTCCCCTTGCCCTTGCCCTGACCTCCCAGCCCTATGGATGTGGGGTCCCCATC\r\r\nATCCCAGCTGCTCCCAAATAAACTCCAGAAG\r\r\n>HSGLTH1 Human theta 1-globin gene\r\r\nCCACTGCACTCACCGCACCCGGCCAATTTTTGTGTTTTTAGTAGAGACTAAATACCATATAGTGAACACCTAAGA\r\r\nCGGGGGGCCTTGGATCCAGGGCGATTCAGAGGGCCCCGGTCGGAGCTGTCGGAGATTGAGCGCGCGCGGTCCCGG\r\r\nGATCTCCGACGAGGCCCTGGACCCCCGGGCGGCGAAGCTGCGGCGCGGCGCCCCCTGGAGGCCGCGGGACCCCTG\r\r\nGCCGGTCCGCGCAGGCGCAGCGGGGTCGCAGGGCGCGGCGGGTTCCAGCGCGGGGATGGCGCTGTCCGCGGAGGA\r\r\nCCGGGCGCTGGTGCGCGCCCTGTGGAAGAAGCTGGGCAGCAACGTCGGCGTCTACACGACAGAGGCCCTGGAAAG\r\r\nGTGCGGCAGGCTGGGCGCCCCCGCCCCCAGGGGCCCTCCCTCCCCAAGCCCCCCGGACGCGCCTCACCCACGTTC\r\r\nCTCTCGCAGGACCTTCCTGGCTTTCCCCGCCACGAAGACCTACTTCTCCCACCTGGACCTGAGCCCCGGCTCCTC\r\r\nACAAGTCAGAGCCCACGGCCAGAAGGTGGCGGACGCGCTGAGCCTCGCCGTGGAGCGCCTGGACGACCTACCCCA\r\r\nCGCGCTGTCCGCGCTGAGCCACCTGCACGCGTGCCAGCTGCGAGTGGACCCGGCCAGCTTCCAGGTGAGCGGCTG\r\r\nCCGTGCTGGGCCCCTGTCCCCGGGAGGGCCCCGGCGGGGTGGGTGCGGGGGGCGTGCGGGGCGGGTGCAGGCGAG\r\r\nTGAGCCTTGAGCGCTCGCCGCAGCTCCTGGGCCACTGCCTGCTGGTAACCCTCGCCCGGCACTACCCCGGAGACT\r\r\nTCAGCCCCGCGCTGCAGGCGTCGCTGGACAAGTTCCTGAGCCACGTTATCTCGGCGCTGGTTTCCGAGTACCGCT\r\r\nGAACTGTGGGTGGGTGGCCGCGGGATCCCCAGGCGACCTTCCCCGTGTTTGAGTAAAGCCTCTCCCAGGAGCAGC\r\r\nCTTCTTGCCGTGCTCTCTCGAGGTCAGGACGCGAGAGGAAGGCGC"
+print(encode_genome(fullfile, "input data test"))
+'''

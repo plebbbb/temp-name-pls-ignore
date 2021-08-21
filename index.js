@@ -8,10 +8,12 @@ app.use(express.json({limit: '500mb'}));
 //afaik the spec for GET says that the body of the sending side should be ignored, so we aren't using it
 //not like post is better though, as technically we shouldn't be dumping an entire file back at the client
 app.post('/encode', (req, res) => {
-    const {encodedata} = req.body;
-    const buf = Buffer.from(encodedata, 'base64').toString('utf-8');
+    const {genedata} = req.body;
+    const {inputdata} = req.body;
+    const gbuf = Buffer.from(genedata, 'base64').toString('utf-8');
+    const hbuf = Buffer.from(inputdata, 'base64').toString('utf-8');
     const {key} = req.body;
-    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), buf, key.toString()]);
+    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), gbuf, hbuf, key.toString()]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
         outpututf8str += data.toString();
