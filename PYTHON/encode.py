@@ -5,6 +5,6 @@ import conversions
 
 
 processedsecretdata = conversions.bytestring_to_letterstring(conversions.mask_key(str(sys.argv[1]), str(sys.argv[2])))
-print(processedsecretdata)
+sys.stdout.write(processedsecretdata)
 
 sys.stdout.flush()

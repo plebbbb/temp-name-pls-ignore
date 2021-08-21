@@ -50,6 +50,9 @@ def letterstring_to_bytestring(input_string) :
         output += chr(letter4char_to_byteint(input_string[index : index+4]))
     return output
 
+#xors a input string with a key string. Use this to convert the raw binary string into a processed binary string
+#which is ready for conversion into letter format
+#it can also be used backwards to unconvert the binary string you get from converting your letter string back to its binary string form
 def mask_key(input_bytestring, Mkeystring) :
     masksz = len(Mkeystring)
     bytekey = Mkeystring.encode()

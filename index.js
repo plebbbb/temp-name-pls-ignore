@@ -9,8 +9,9 @@ app.use(express.json({limit: '500mb'}));
 //not like post is better though, as technically we shouldn't be dumping an entire file back at the client
 app.post('/encode', (req, res) => {
     const {encodedata} = req.body;
+    const buf = Buffer.from(encodedata, 'base64').toString('utf-8');
     const {key} = req.body;
-    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), encodedata.toString(), key.toString()]);
+    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), buf, key.toString()]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
         outpututf8str += data.toString();
@@ -26,14 +27,15 @@ app.post('/encode', (req, res) => {
 
 app.post('/decode', (req, res) => {
     const {decodedata} = req.body;
+    const buf = Buffer.from(decodedata, 'base64').toString('utf-8');
     const {key} = req.body;
-    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'decode.py'), decodedata.toString(), key.toString()]);
+    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'decode.py'), buf, key.toString()]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
         outpututf8str += data.toString();
       });
-
     task.on('close', (code) => {
+      //  console.log(outpututf8str);
         res.send({
             output : `${outpututf8str}`
         })
