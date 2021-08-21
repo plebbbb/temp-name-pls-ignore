@@ -1,8 +1,6 @@
 const express = require('express');
 const {spawn} = require('child_process');
 const app = express();
-const PORT = 8080;
-
 
 app.use(express.json({limit: '500mb'}));
 
@@ -42,7 +40,10 @@ app.get('/decode', (req, res) => {
 );
 
 
+
+const port = process.env.PORT || 8080;
+
 app.listen(
-    PORT,
+    port,
     () => console.log(`listening on ${PORT}`)
 );
