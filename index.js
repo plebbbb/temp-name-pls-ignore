@@ -13,7 +13,9 @@ app.post('/encode', (req, res) => {
     const gbuf = Buffer.from(genedata, 'base64').toString('utf-8');
     const hbuf = Buffer.from(inputdata, 'base64').toString('utf-8');
     const {key} = req.body;
-    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), gbuf, hbuf, key.toString()]);
+    const {filename} = req.body;
+    const fnmstr = Buffer.from(filename, 'base64').toString('utf-8');
+    const task = spawn('python', [path.join(__dirname, 'PYTHON', 'encode.py'), gbuf, hbuf, key.toString(), fnmstr]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
         outpututf8str += data.toString();
@@ -30,12 +32,12 @@ app.post('/encode', (req, res) => {
 app.post('/decode', (req, res) => {
     const {decodedata} = req.body;
     const buf = Buffer.from(decodedata, 'base64').toString('utf-8');
-   // console.log(buf)
+    //console.log(buf)
     const {key} = req.body;
     const task = spawn('python', [path.join(__dirname, 'PYTHON', 'decode.py'), buf, key.toString()]);
     var outpututf8str = "";
     task.stdout.on('data', data => {
-       // console.log(data.toString())
+        console.log(data.toString())
         outpututf8str += data.toString();
       });
     task.on('close', (code) => {

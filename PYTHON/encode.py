@@ -6,55 +6,26 @@ import codon
 
 
 #returns a list with the current processeddata position, activated codon, and converted string(only one line of blk)
-def encode_genomeline(linestring, input_data, data_index, cur_CD):
+def encode_genomeline(linestring, input_data, data_index):
     output = ""
-    compl = False
-    postcdsw_ctr = 0 #counter to prevent things like TGTGT from counting as two codons
-    i = 0
-    while(i <= len(linestring)-3) :
-        if linestring[i : i+3] in codon.codonlist and postcdsw_ctr == 0:
-            if (cur_CD == 0) :
-                cur_CD = codon.codonlist[linestring[i : i+3]]
-                postcdsw_ctr = 2
-            elif (codon.codonlist[linestring[i : i+3]] == cur_CD):
-                cur_CD = 0
-                output += linestring[i : i+3]
-                i+=3
-                continue
-        elif(postcdsw_ctr > 0): postcdsw_ctr-=1
-        if cur_CD != 0 or compl:
-            output += linestring[i]
-        else:
-            output += input_data[data_index]
-            data_index +=1
-            if(data_index == len(input_data)):
-                compl = True
-        i+=1
-    if cur_CD == 0 and not compl:
-        while(i < len(linestring)):
-            output += input_data[data_index]
-            data_index +=1
-            if(data_index == len(input_data)):
-                compl = True
-                break
-            i+=1
+    if(len(input_data)-data_index-1 < len(linestring)):
+        output = input_data[data_index : len(input_data)] + linestring[len(input_data)-data_index-1 : len(linestring)]
+        data_index = len(input_data)
     else:
-        output += linestring[len(linestring)-2 : len(linestring)]
-
-    return [data_index, compl, cur_CD, output]
+        output = input_data[data_index : data_index + len(linestring)]
+        data_index += len(linestring)
+    return [data_index, output]
 
 #returns a list consisting of the current processeddata position, and the converted string
 def encode_genomeblock(blockstring, input_data, data_index):
     output = ""
     linelist = blockstring.split('\n')
-    curCD = 0
     compl = False
     for lv in range(0, len(linelist)):
-        processedline = encode_genomeline(linelist[lv].rstrip('\r'), input_data, data_index, curCD)
-        output += processedline[3] + '\r\n'
-        curCD = processedline[2]
+        processedline = encode_genomeline(linelist[lv].rstrip('\r'), input_data, data_index)
+        output += processedline[1] + '\r\n'
         data_index = processedline[0]
-        if(processedline[1]):
+        if(data_index == len(input_data)):
             compl = True
             for ev in range(lv + 1, len(linelist)):
                 output += linelist[ev] + '\r\n'
@@ -84,22 +55,25 @@ def encode_genome(raw_genome_fasta, processeddata) :
 #"""
 #actual processing stuff
 processedsecretdata = conversions.bytestring_to_letterstring(conversions.mask_key(str(sys.argv[2]), str(sys.argv[3])))
-header = conversions.bytestring_to_letterstring(conversions.mask_key((len(processedsecretdata).to_bytes(4,'big')).decode(), str(sys.argv[3])))
-finalizeddata = encode_genome(str(sys.argv[1]), header + processedsecretdata)
+processednamedata = conversions.bytestring_to_letterstring(conversions.mask_key(str(sys.argv[4]), str(sys.argv[3])))
+headerNAME = conversions.bytestring_to_letterstring(conversions.mask_key((len(processednamedata).to_bytes(4,'big')).decode(), str(sys.argv[3])))
+headerDATA = conversions.bytestring_to_letterstring(conversions.mask_key((len(processedsecretdata).to_bytes(4,'big')).decode(), str(sys.argv[3])))
+finalletterdata = conversions.codon_fix_check(headerDATA + headerNAME + processednamedata + processedsecretdata)
+finalizeddata = encode_genome(str(sys.argv[1]), finalletterdata)
 sys.stdout.write(finalizeddata)
 sys.stdout.flush()
-#""
+#"""
 
-
-
+#ACTCCCGCTATCAGCCACTCCCGCTATCAGCCCCCTCCTCATCGCTGGGCACAGCCCAGAGGGTATAAACAGATCG
+#ACTCCCGCTATCAGCCACTCCCGCTATCAGCCTGCAAACATCAAACAAGTCACACATCCCAAAACTCATCAAGTTCAAAAAAAAAAAAAAAAGGCCTCCCGGACTAAACTAAGACAAAAA
 
 #TESTS
 '''
 #one line test - passed
-substring = "0000TGTTGTTGT0000"
+substring = "00000"
 targetstr = "987654321" # process index should be 9
-outputlist = encode_genomeline(substring, targetstr, 0, 0)
-print(f'CUR_INDEX: {outputlist[0]}\nCOMPLETE?: {outputlist[1]}\nIN CODON PAIR?: {outputlist[2]}PROCESSED STRING: {outputlist[3]}')
+outputlist = encode_genomeline(substring, targetstr, 0)
+print(f'CUR_INDEX: {outputlist[0]}\nPROCESSED STRING: {outputlist[1]}')
 '''
 '''
 #multi-line test - passed

@@ -4,3 +4,8 @@ codonlist = {
     "TGT" : 1,
     "TGC" : 1
 }
+
+Rcodonlist = {
+    1 : "TGC"
+}
+

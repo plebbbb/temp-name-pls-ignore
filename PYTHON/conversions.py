@@ -1,4 +1,6 @@
 ##TESTING STUFF AT BOTTOM
+import codon
+import random
 
 #turns an int into its coorsponding char
 def calc_char(x) :
@@ -66,6 +68,48 @@ def mask_key(input_bytestring, Mkeystring) :
     return output
 
 
+def iter_check(str):
+    for i in range(1,len(str)-4):
+        if str[i : i+3] in codon.codonlist:
+            return False
+    return True
+
+
+#randomize string to not have any codons via brute force
+#mistakes were made
+def codon_hard_randomize(SVV):
+    output = ""
+    for e in range(0,random.randint(2,10)):
+        output += calc_char(random.randint(0,3))           
+    check_str = SVV + output + SVV
+    while(not iter_check(check_str)):
+        output = ""
+        for e in range(0,random.randint(2,10)):
+            output += calc_char(random.randint(0,3))       
+        check_str = SVV + output + SVV
+    return output
+
+
+#corrects for randomly generated codons by doing a blank gap with random letters
+def codon_fix_check(final_prealgo_str):
+    i = 0
+    lastsplit = 0
+    output = ""
+    while(i <= len(final_prealgo_str)-3) :
+        if final_prealgo_str[i : i+3] in codon.codonlist:
+            SV = final_prealgo_str[i : i+3]
+            output += final_prealgo_str[lastsplit : i+3]
+            lastsplit = i+3
+            i+=3
+            output += codon_hard_randomize(SV)
+            output += SV
+            continue
+        i+=1
+    if(i < len(final_prealgo_str)):
+        output += final_prealgo_str[lastsplit : len(final_prealgo_str)]
+    return output
+
+
 #TESTS
 """
 #one number test - passed
@@ -91,3 +135,9 @@ masked = mask_key(base, key)
 unmasked = mask_key(masked,key)
 print(f'OG: {base}\nMASKED: {masked}\nUNMASKED: {unmasked}')
 """
+'''
+#codon conversion test - seems ok
+st = "0000TGC0000TGC0"
+print(codon_fix_check(st))
+
+'''
