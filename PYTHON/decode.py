@@ -10,6 +10,7 @@ def decode_genomeline(linestring, data_index, cur_CD, data_size):
     compl = False
     postcdsw_ctr = 0 #counter to prevent things like TGTGT from counting as two codons
     i = 0
+    #print(linestring)
     while(i <= len(linestring)-3) :
         if linestring[i : i+3] in codon.codonlist and postcdsw_ctr == 0:
             if (cur_CD == 0) :
@@ -40,10 +41,10 @@ def decode_genomeline(linestring, data_index, cur_CD, data_size):
 
 def decode_genomeblock(blockstring, data_index, data_size, curCD):
     output = ""
-    linelist = blockstring.split('\n')
+    linelist = blockstring.split('\\n')
     compl = False
     for lv in range(0, len(linelist)):
-        processedline = decode_genomeline(linelist[lv].rstrip('\r'), data_index, curCD, data_size)
+        processedline = decode_genomeline(linelist[lv].strip('\\r'), data_index, curCD, data_size)
         output += processedline[3]
         curCD = processedline[2]
         data_index = processedline[0]
@@ -62,15 +63,15 @@ def decode_genome_header(raw_genome_fasta, key, offset, size) :
     for bv in range(0,len(blocklist)):
         if len(blocklist[bv]) <= 3: continue #skip empty
         nameblockpair = blocklist[bv].split('\\n', 1)
-        print(nameblockpair[1])
-        print("FILL\n\n\n\n")
-        statusarr = decode_genomeblock(nameblockpair[1], data_index, data_size, curCD)
+       # print(nameblockpair[1])
+       # print("FILL\n\n\n\n")
+        statusarr = decode_genomeblock(nameblockpair[1].strip('\\r'), data_index, data_size, curCD)
         data_index = statusarr[0]
         output += statusarr[2]
         curCD = statusarr[3]
         if(statusarr[1]): break
-    print(output)
-    print(output[offset : len(output)])
+ #   print(output)
+  #  print(output[offset : len(output)])
     return conversions.mask_key(conversions.letterstring_to_bytestring(output[offset : len(output)]), key)
 
 
@@ -79,22 +80,26 @@ def decode_genome(raw_genome_fasta, key) :
     data_index = 0
     blocklist = raw_genome_fasta.split('>')
     data_size = int.from_bytes(decode_genome_header(raw_genome_fasta, key, 0, 16).encode(), 'big') + 32 #32 for the two 4 byte * 4 letter/byte file size headers
-    print(data_size)
+  #  print(data_size)
     name_size = int.from_bytes(decode_genome_header(raw_genome_fasta, key, 16, 16).encode(), 'big')
-    print(name_size)
-    #name = decode_genome_header(raw_genome_fasta, key, 32, name_size)
-    #print(name)
+   # print(name_size)
+    name = decode_genome_header(raw_genome_fasta, key, 32, name_size)
+    sys.stdout.write(name.strip("\r\n"))
+    sys.stdout.flush()
+   # print(name)
     data_offset = 32 + name_size
     data_size += name_size
+    curCD = 0
     for bv in range(0,len(blocklist)):
         if len(blocklist[bv]) <= 3: continue #skip empty
         nameblockpair = blocklist[bv].split("\\n", 1)  #some weird line spacing issue is going on here
 
-        statusarr = decode_genomeblock(nameblockpair[1].strip('\r'), data_index, data_size)
+        statusarr = decode_genomeblock(nameblockpair[1].strip('\\r'), data_index, data_size, curCD)
         data_index = statusarr[0]
         output += statusarr[2]
-        #print(statusarr)
+        curCD = statusarr[3]
         if(statusarr[1]): break
+   # print(output)
     return conversions.mask_key(conversions.letterstring_to_bytestring(output[data_offset : data_size]),key)
 
 #'''
