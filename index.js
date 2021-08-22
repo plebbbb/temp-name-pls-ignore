@@ -37,6 +37,15 @@ app.post('/encode', (req, res) => {
 }
 );
 
+app.post('/test', (req, res) => {
+    const {sent} = req.body;
+    console.log(sent)
+    res.status(200).send({
+        sent : `${sent} is sent back`
+    })
+});
+
+
 app.post('/decode', (req, res) => {
     const {decodedata} = req.body;
     const buf = Buffer.from(decodedata, 'base64').toString('utf-8');
