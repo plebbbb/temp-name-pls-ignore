@@ -23,7 +23,7 @@ app.post('/encode', (req, res) => {
 
     task.on('close', (code) => {
         res.send({
-            output : `${outpututf8str}`
+            output : `${Buffer.from(outpututf8str).toString('base64')}`
         })
     });
 }
@@ -41,8 +41,8 @@ app.post('/decode', (req, res) => {
       });
     task.on('close', (code) => {
         res.send({
-            name : `${outpututf8str[0]}`,
-            output : `${outpututf8str[1]}`
+            name : `${Buffer.from(outpututf8str[0]).toString('base64')}`,
+            output : `${Buffer.from(outpututf8str[1]).toString('base64')}`
         })
     });
 
