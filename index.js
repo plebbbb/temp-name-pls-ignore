@@ -1,8 +1,10 @@
 const express = require('express');
 const {spawn} = require('child_process');
 const path = require('path');
+var cors = require('cors')
 const app = express();
 
+app.use(cors())
 app.use(express.json({limit: '500mb'}));
 
 //afaik the spec for GET says that the body of the sending side should be ignored, so we aren't using it
@@ -47,6 +49,7 @@ app.post('/test', (req, res) => {
 
 
 app.post('/decode', (req, res) => {
+    console.log(req)
     const {decodedata} = req.body;
     const buf = Buffer.from(decodedata, 'base64').toString('utf-8');
     //console.log(buf)
